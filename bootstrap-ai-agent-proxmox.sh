@@ -54,8 +54,26 @@ fi
 if ! command -v fnm >/dev/null 2>&1; then
   echo 'fnm not found after installation; check installer output.' >&2; exit 1
 fi
-FNM_LINE='eval "$(fnm env --use-on-cd --shell bash)"'
-grep -Fqx "$FNM_LINE" "$HOME/.bashrc" || printf '\n%s\n' "$FNM_LINE" >> "$HOME/.bashrc"
+# Configure fnm permanently for Bash
+FNM_START="# BEGIN FNM CONFIG"
+FNM_END="# END FNM CONFIG"
+
+# Remove any previous unguarded initialization
+sed -i '/^eval "$(fnm env --use-on-cd --shell bash)"$/d' "$HOME/.bashrc"
+
+# Add the configuration only once
+if ! grep -Fqx "$FNM_START" "$HOME/.bashrc"; then
+    cat >> "$HOME/.bashrc" <<'EOF'
+
+# BEGIN FNM CONFIG
+export PATH="$HOME/.local/share/fnm:$PATH"
+
+if command -v fnm >/dev/null 2>&1; then
+    eval "$(fnm env --use-on-cd --shell bash)"
+fi
+# END FNM CONFIG
+EOF
+fi
 eval "$(fnm env --shell bash)"
 fnm install "$NODE_MAJOR"
 fnm default "$NODE_MAJOR"
